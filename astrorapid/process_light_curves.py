@@ -1,3 +1,5 @@
+from multiprocessing import Pool
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import WMAP9 as cosmo
@@ -152,7 +154,9 @@ class InputLightCurve(object):
         return outlc
 
 
-def read_multiple_light_curves(light_curve_list, known_redshift=True, training_set_parameters=None, other_meta_data=None):
+def read_multiple_light_curves(light_curve_list, known_redshift=True,
+                               training_set_parameters=None, other_meta_data=None,
+                               nprocesses=2, calculate_t0=False):
     """
     light_curve_list is a list of tuples with each tuple having entries:
     mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv
@@ -165,12 +169,16 @@ def read_multiple_light_curves(light_curve_list, known_redshift=True, training_s
     if other_meta_data is None:
         other_meta_data = [None]*len(light_curve_list)
 
-    processed_light_curves = {}
-    for i, light_curve in enumerate(light_curve_list):
-        mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv = light_curve
-        inputlightcurve = InputLightCurve(*light_curve, known_redshift=known_redshift,
-                                          training_set_parameters=training_set_parameters,
-                                          other_meta_data=other_meta_data[i])
-        processed_light_curves[objid] = inputlightcurve.preprocess_light_curve()
-
-    return processed_light_curves
+    r = list()
+    with Pool(processes=nprocesses) as pool:
+        for i, light_curve in enumerate(light_curve_list):
+            mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv = light_curve
+            inputlightcurve = InputLightCurve(*light_curve, known_redshift=known_redshift,
+                                              training_set_parameters=training_set_parameters[i],
+                                              other_meta_data=other_meta_data[i],
+                                              calculate_t0=calculate_t0)
+            r.append((
+                objid, pool.apply_async(
+                inputlightcurve.preprocess_light_curve, ())
+            ))
+        return {objid: _.get() for objid, _ in r}

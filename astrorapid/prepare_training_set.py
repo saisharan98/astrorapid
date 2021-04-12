@@ -418,8 +418,9 @@ class PrepareTrainingSetArrays(PrepareArrays):
 
             class_name = self.class_name_map[class_num]
             activeindexes = (tinterp > t0)
-            labels[i] = class_name
-            y[i][0:len_t][activeindexes] = class_name
+            label_name = 'Kilonova' if class_name == 'Kilonova' else 'Other'
+            labels[i] = label_name
+            y[i][0:len_t][activeindexes] = label_name
 
         deleterows = np.array(deleterows)
         count_deleterows = len(deleterows)
