@@ -95,7 +95,7 @@ class Classify(object):
 
         if model_filepath != '' and os.path.exists(model_filepath):
             self.model_filepath = model_filepath
-            self.contextual_info = ['redshift',] if known_redshift else []
+            self.contextual_info = ['offset', 'logprob']
             self.known_redshift = known_redshift
             self.passbands = passbands
             self.class_names = class_names

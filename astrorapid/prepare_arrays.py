@@ -84,6 +84,7 @@ class PrepareArrays(object):
         return tinterp, len_t
 
     def update_X(self, X, i, data, tinterp, len_t, objid, contextual_info, meta_data):
+        print(meta_data)
         for j, pb in enumerate(self.passbands):
             # Drop infinite or nan values in any row
             data.remove_rows(np.where(~np.isfinite(data['time']))[0])
