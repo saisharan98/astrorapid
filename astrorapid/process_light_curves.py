@@ -174,7 +174,7 @@ def read_multiple_light_curves(light_curve_list, known_redshift=True,
         for i, light_curve in enumerate(light_curve_list):
             mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv = light_curve
             inputlightcurve = InputLightCurve(*light_curve, known_redshift=known_redshift,
-                                              training_set_parameters=training_set_parameters[i],
+                                              training_set_parameters=training_set_parameters[i] if training_set_parameters else None,
                                               other_meta_data=other_meta_data[i],
                                               calculate_t0=calculate_t0)
             r.append((

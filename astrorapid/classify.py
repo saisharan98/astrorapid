@@ -37,7 +37,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 class Classify(object):
     def __init__(self, model_name='ZTF_known_redshift', model_filepath='', known_redshift=True, passbands=('g', 'r'),
                  class_names=('Pre-explosion', 'SNIa-norm', 'SNIbc', 'SNII', 'SNIa-91bg', 'SNIa-x', 'Kilonova', 'SLSN-I', 'TDE'),
-                 nobs=50, mintime=-70, maxtime=80, timestep=3.0, bcut=False, zcut=None, graph=None, model=None):
+                 nobs=50, mintime=-70, maxtime=80, timestep=3.0, bcut=False, zcut=None, graph=None, model=None,
+                 no_context=False):
         """ Takes a list of photometric information and classifies light curves as a function of time
 
         Parameters
@@ -95,7 +96,7 @@ class Classify(object):
 
         if model_filepath != '' and os.path.exists(model_filepath):
             self.model_filepath = model_filepath
-            self.contextual_info = ['redshift',] if known_redshift else []
+            self.contextual_info = [] if no_context else ['offset', 'logprob', 'temporal_weight', 'area_ninety']
             self.known_redshift = known_redshift
             self.passbands = passbands
             self.class_names = class_names

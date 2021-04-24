@@ -34,8 +34,8 @@ COLPB = {'u': 'tab:blue', 'g': 'tab:blue', 'r': 'tab:orange', 'i': 'm', 'z': 'k'
 MARKPB = {'g': 'o', 'r': 's', 'i': 'x'}
 ALPHAPB = {'g': 0.3, 'r': 1., 'i': 0.7}
 WLOGLOSS_WEIGHTS = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
-MINTIME = -70
-MAXTIME = 80
+MINTIME = -2
+MAXTIME = 14
 
 def plot_metrics(class_names, model, X_test, y_test, fig_dir, timesX_test=None, orig_lc_test=None, objids_test=None,
                  passbands=('g', 'r'), num_ex_vs_time=100, init_day_since_trigger=-25):

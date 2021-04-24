@@ -202,10 +202,8 @@ def read_serialized_snana_lightcurves(filename, **kwargs):
     ----------
     filename : str
         serialized lightcurve file. Assumed uncompressed.
-    nprocesses : int
-        pool size
-    calculate_t0 : bool
-        estimate t0 using quadratic fit
+    **kwargs
+        keyword arguments to :meth:`read_multiple_light_curves`
     """
     import pandas as pd
     serialized_lightcurves = pd.read_pickle(filename)
@@ -240,6 +238,8 @@ def read_serialized_snana_lightcurves(filename, **kwargs):
         ))
         if not np.any(phot_flag == 6144):  # detections barely crossing threshold
             continue
+        if np.isinf(lightcurve.logprob):
+            lightcurve.logprob = -99
         lightcurve_name = str(lightcurve.SIM_TYPE_INDEX) + "_" + \
             str(uuid.UUID(bytes=os.urandom(16)))
         lightcurve_list.append(
@@ -253,7 +253,7 @@ def read_serialized_snana_lightcurves(filename, **kwargs):
             dict(class_number=lightcurve.SIM_TYPE_INDEX, peakmjd=lightcurve.SIM_PEAKMJD)
         )
         other_meta_data.append(
-            dict(lightcurve[["logprob", "area_ninety", "offset", "true_label"]])
+            dict(lightcurve[["logprob", "area_ninety", "offset", "true_label", "temporal_weight"]])
         )
     processed_lightcurves = read_multiple_light_curves(
         lightcurve_list, other_meta_data=other_meta_data,

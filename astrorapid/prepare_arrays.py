@@ -30,11 +30,11 @@ class PrepareArrays(object):
             deleted = True
             return deleterows, deleted
 
-        if len(data) < 4:
-            print("Less than 4 epochs. nobs = {}".format(len(data)))
-            deleterows.append(i)
-            deleted = True
-        elif pre_trigger and len(time[time < 0]) < 3:
+        #if len(data) < 4:
+        #    print("Less than 4 epochs. nobs = {}".format(len(data)))
+        #    deleterows.append(i)
+        #    deleted = True
+        if pre_trigger and len(time[time < 0]) < 3:
             print("Less than 3 points in the r band pre trigger", len(time[time < 0]))
             deleterows.append(i)
             deleted = True

@@ -418,7 +418,9 @@ class PrepareTrainingSetArrays(PrepareArrays):
 
             class_name = self.class_name_map[class_num]
             activeindexes = (tinterp > t0)
+            #label_name = 'Kilonova' if class_name == 'Kilonova' else 'Supernova' if class_name in ['SNIbc', 'SNIa-x', 'SNII', 'CCSN', 'SNIa-norm', 'SNIa-91bg'] else 'Other'
             label_name = 'Kilonova' if class_name == 'Kilonova' else 'Other'
+            #label_name = class_name
             labels[i] = label_name
             y[i][0:len_t][activeindexes] = label_name
 
