@@ -46,13 +46,16 @@ def train_model(X_train, X_test, y_train, y_test, sample_weights=None, fig_dir='
 
         inputs = Input(shape=(X_train.shape[1], X_train.shape[2]))
         hidden = Masking(mask_value=0.)(inputs)
-        hidden = TCN(nunits, return_sequences=True, kernel_size=2, nb_stacks=1, dilations=[1, 2, 4, 8], padding='causal', use_skip_connections=True, dropout_rate=dropout_rate, activation='sigmoid')(hidden)
+        hidden = TCN(nunits, return_sequences=True, kernel_size=2, nb_stacks=2, dilations=[1, 2],
+                     padding='causal', use_skip_connections=True, dropout_rate=dropout_rate,
+                     activation='sigmoid')(hidden)
         outputs = TimeDistributed(Dense(num_classes, activation='softmax'))(hidden)
         model = Model(inputs, outputs)
 
 
         model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=epochs, batch_size=batch_size,
+        history = model.fit(X_train, y_train, validation_data=(X_test, y_test),
+                            epochs=epochs, batch_size=batch_size,
                             verbose=2, sample_weight=sample_weights)
 
         print(model.summary())

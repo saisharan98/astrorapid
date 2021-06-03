@@ -282,9 +282,8 @@ class PrepareTrainingSetArrays(PrepareArrays):
         # Use class numbers 1,2,3... instead of 1, 3, 13 etc.
         y_indexes = np.copy(y)
         for i, c in enumerate(classes):
-            y_indexes[y == c] = i + 1
+            y_indexes[y == c] = i
         y = y_indexes
-
         y = to_categorical(y)
 
         # Correct shape for keras is (N_objects, N_timesteps, N_passbands) (where N_timesteps is lookback time)

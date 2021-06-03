@@ -96,7 +96,7 @@ class Classify(object):
 
         if model_filepath != '' and os.path.exists(model_filepath):
             self.model_filepath = model_filepath
-            self.contextual_info = [] if no_context else ['offset', 'logprob', 'temporal_weight', 'area_ninety']
+            self.contextual_info = [] if no_context else ['offset', 'logprob', 'area_ninety']
             self.known_redshift = known_redshift
             self.passbands = passbands
             self.class_names = class_names
@@ -311,9 +311,8 @@ class Classify(object):
                 used_passbands = [pb for pb in self.passbands if pb in lc_data['passband']]
                 for pb in used_passbands:
                     pbmask = lc_data['passband'] == pb
-                    if pb in self.orig_lc[idx]:
-                        obs_time.append(lc_data[pbmask]['time'].data)
-                obs_time = np.array(obs_time)
+                    obs_time.append(lc_data[pbmask]['time'].data)
+                obs_time = np.hstack(obs_time)
                 obs_time = np.sort(obs_time[~np.isnan(obs_time)])
                 y_predict_at_obstime = []
                 for classnum, classname in enumerate(self.class_names):
