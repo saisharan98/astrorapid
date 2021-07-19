@@ -64,7 +64,7 @@ def calc_luminosity(flux, fluxerr, mu):
 
 
 def get_sntypes():
-    sntypes_map = {1: 'SNIa-norm',
+    '''sntypes_map = {1: 'SNIa-norm',
                    11: 'SNIa-norm',
                    2: 'SNII',
                    12: 'SNIIpca',
@@ -92,5 +92,7 @@ def get_sntypes():
                    91: 'uLens-1STAR',
                    92: 'uLens-String',
                    93: 'uLens - Point',
-                   99: 'Rare'}
+                   99: 'Rare'}'''
+	sntypes_map = {1: 'MPA1', 2:'APR4'}
+
     return sntypes_map

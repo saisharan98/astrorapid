@@ -1,10 +1,12 @@
+import os, uuid
+
 import numpy as np
 import multiprocessing as mp
 import pandas as pd
 import astropy.io.fits as afits
 from collections import OrderedDict
 
-from astrorapid.process_light_curves import InputLightCurve
+from astrorapid.process_light_curves import InputLightCurve, read_multiple_light_curves
 
 
 class GetData(object):
@@ -113,8 +115,7 @@ def read_fits_file(args):
 
     for i, head in enumerate(header_data):
         class_num = head['SIM_TYPE_INDEX']
-        snid = head['SNID']
-        objid = '{}_{}'.format(class_num, snid)
+        objid = str(uuid.UUID(bytes=os.urandom(16)))
         ptrobs_min = head['PTROBS_MIN']
         ptrobs_max = head['PTROBS_MAX']
         redshift = head['SIM_REDSHIFT_HOST']
@@ -171,11 +172,8 @@ def read_light_curves_from_snana_fits_files(head_files, phot_files, passbands=('
     """
 
     args_list = []
-    for i, head_file in enumerate(head_files):
-        assert phot_files[i].split('_')[-2].split('-')[1] == head_files[i].split('_')[-2].split('-')[1]
-        head_files_part = head_files[i]
-        phot_files_part = phot_files[i]
-        args_list.append((head_files_part, phot_files_part, passbands, known_redshift, calculate_t0))
+    for head_file, phot_file in zip(head_files, phot_files):
+        args_list.append((head_file, phot_file, passbands, known_redshift, calculate_t0))
 
     light_curves = {}
     if nprocesses == 1:
@@ -195,3 +193,74 @@ def read_light_curves_from_snana_fits_files(head_files, phot_files, passbands=('
 
     return light_curves
 
+
+def read_serialized_snana_lightcurves(filename, **kwargs):
+    """Read serialized pickled objects and convert to :class:`InputLightCurve`
+    objects.
+
+    Parameters
+    ----------
+    filename : str
+        serialized lightcurve file. Assumed uncompressed.
+    **kwargs
+        keyword arguments to :meth:`read_multiple_light_curves`
+    """
+    import pandas as pd
+    serialized_lightcurves = pd.read_pickle(filename)
+    lightcurve_list = list()
+    other_meta_data = list()
+    training_set_parameters = list()
+    for idx, lightcurve in serialized_lightcurves.iterrows():
+        times = (
+            lightcurve.get("mjd_g", np.array([])),
+            lightcurve.get("mjd_r", np.array([])),
+            lightcurve.get("mjd_i", np.array([]))
+        )
+        passbands = [
+            [f,] * len(t) for f, t in zip(('g', 'r', 'i'), times)
+        ]
+        times = np.hstack(times)
+        passbands = np.hstack(passbands)
+        flux = np.hstack((
+            lightcurve.get("fluxcal_g", np.array([])),
+            lightcurve.get("fluxcal_r", np.array([])),
+            lightcurve.get("fluxcal_i", np.array([]))
+        ))
+        flux_err = np.hstack((
+            lightcurve.get("fluxcalerr_g", np.array([])),
+            lightcurve.get("fluxcalerr_r", np.array([])),
+            lightcurve.get("fluxcalerr_i", np.array([]))
+        ))
+        phot_flag = np.hstack((
+            lightcurve.get("photflag_g", np.array([])),
+            lightcurve.get("photflag_r", np.array([])),
+            lightcurve.get("photflag_i", np.array([]))
+        ))
+        if not np.any(phot_flag == 6144):  # detections barely crossing threshold
+            continue
+        if np.isinf(lightcurve.logprob):
+            lightcurve.logprob = -99
+        lightcurve_name = str(lightcurve.SIM_TYPE_INDEX) + "_" + \
+            str(uuid.UUID(bytes=os.urandom(16)))
+        lightcurve_list.append(
+            (
+                times, flux, flux_err, passbands, phot_flag,
+                lightcurve.SIM_RA, lightcurve.SIM_DEC, lightcurve_name,
+                lightcurve.SIM_REDSHIFT_HELIO, lightcurve.SIM_MWEBV
+            )
+        )
+        training_set_parameters.append(
+            dict(class_number=lightcurve.SIM_TYPE_INDEX, peakmjd=lightcurve.SIM_PEAKMJD)
+        )
+        other_meta_data.append(
+            dict(
+                lightcurve[["logprob", "area_ninety", "offset", "true_label",
+                            "temporal_weight"]]
+            )
+        )
+    processed_lightcurves = read_multiple_light_curves(
+        lightcurve_list, other_meta_data=other_meta_data,
+        training_set_parameters=training_set_parameters,
+        known_redshift=False, **kwargs
+    )
+    return processed_lightcurves

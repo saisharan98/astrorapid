@@ -13,9 +13,20 @@ def create_custom_classifier(get_data_func, data_dir, class_nums=(1,2,), class_n
                              training_set_dir='data/training_set_files', save_dir='data/saved_light_curves',
                              fig_dir='Figures', plot=True, num_ex_vs_time=100, init_day_since_trigger=-25,
                              augment_data=False, redo_processing=False):
+"""
+def create_custom_classifier(get_data_func, data_dir, class_nums=(1,2,), class_name_map=None, reread_data=False, train_size=0.6,
+                             contextual_info=('logprob','areafifty','areaninety'), passbands=('g', 'r'), nobs=50, mintime=-70, maxtime=80,
+                             timestep=3.0, retrain_network=True, train_epochs=50, dropout_rate=0,
+                             train_batch_size=64, nunits=100, zcut=0.5, bcut=True,
+                             ignore_classes=(), nprocesses=1, nchunks=1000, otherchange='',
+                             training_set_dir='data/training_set_files', save_dir='data/saved_light_curves',
+                             fig_dir='Figures', plot=True, num_ex_vs_time=100, init_day_since_trigger=-25,
+                             augment_data=False, redo_processing=False):
 
+"""
     """
     Create a classifier with your own data and own training parameters.
+    #changed class nums (changed helper.py too)
 
     Parameters
     ----------
@@ -26,20 +37,20 @@ def create_custom_classifier(get_data_func, data_dir, class_nums=(1,2,), class_n
         E.g. get_data_func = get_data_custom(class_num, data_dir, save_dir, passbands)
     data_dir : str
         Directory where data is stored. E.g. data_dir='data/ZTF_20190512/'
-    class_nums : tuple
+    class_nums : tuple #change to binary
         Class numbers (or names) to train on. E.g. class_nums=(1, 5, 6, 12, 41, 43, 51)
     class_name_map : dict or None
         This maps the class_nums onto class names.
         E.g. class_name_map = {1: 'SNIa-norm', 5: 'SNIbc', 6: 'SNII', 12: 'SNII', 41: 'SNIa-91bg', 43: 'SNIa-x', 51: 'Kilonova'}.
         You may use the same value for a different key if you want the classifier to join these two class_nums under the same label.
-        If this is None, it will use the default mapping listed in get_sntypes in helpers.py.
+        If this is None, it will use the default mapping listed in get_sntypes in helpers.py. #change this to binary 
     reread_data : bool
         If this is True, then it will reread_data your data and resave the processed files, otherwise
         it will check if the data has already been read, processed and saved.
     train_size : float
         Fraction of data to use for training, the remainder will be used for testing/validation.
         Usually choose a value between 0.5 - 1.0 depending on how much data you have.
-    contextual_info : tuple of strings
+    contextual_info : tuple of strings #need to change to handle logprob, area50,area90, -> contexual info now 'skymap' not 
         What contextual information to use while training. You can write any string in this tuple provided that it
         is stored as a keyword in the metadata of the light_curve Table object returned by the `get_data_func`.
     passbands : tuple of str
@@ -103,6 +114,9 @@ def create_custom_classifier(get_data_func, data_dir, class_nums=(1,2,), class_n
     for dirname in [training_set_dir, data_dir, save_dir]:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
+    #training set dir: /projects/caps/uiucsn/sai/astrorapid/astrorapid
+    #data_dir: ?
+    
 
     for dirname in [fig_dir, fig_dir + '/cf_since_trigger', fig_dir + '/cf_since_t0', fig_dir + '/roc_since_trigger',
                 fig_dir + '/lc_pred', fig_dir + '/pr_since_trigger', fig_dir + '/truth_table_since_trigger']:
@@ -117,12 +131,12 @@ def create_custom_classifier(get_data_func, data_dir, class_nums=(1,2,), class_n
                                              get_data_func=get_data_func, augment_data=augment_data, redo_processing=redo_processing)
     X_train, X_test, y_train, y_test, labels_train, labels_test, class_names, class_weights, sample_weights, \
     timesX_train, timesX_test, orig_lc_train, orig_lc_test, objids_train, objids_test = \
-        preparearrays.prepare_training_set_arrays(otherchange, class_nums, nprocesses, train_size)
+        preparearrays.prepare_training_set_arrays(otherchange, class_nums, nprocesses, train_size) #What to change here?
 
     # Train the neural network model on saved files
     model = train_model(X_train, X_test, y_train, y_test, sample_weights=sample_weights, fig_dir=fig_dir,
                         retrain=retrain_network, epochs=train_epochs, plot_loss=plot, dropout_rate=dropout_rate,
-                        batch_size=train_batch_size, nunits=nunits)
+                        batch_size=train_batch_size, nunits=nunits) #What to change here?
 
     # Plot classification metrics such as confusion matrices
     if plot:

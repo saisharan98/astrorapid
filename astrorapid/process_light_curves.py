@@ -1,3 +1,5 @@
+from multiprocessing import Pool
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import WMAP9 as cosmo
@@ -10,9 +12,9 @@ from astrorapid.ANTARES_object.LAobject import LAobject
 
 class InputLightCurve(object):
     def __init__(self, mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift=None, mwebv=None,
-                 known_redshift=True, training_set_parameters=None, calculate_t0=None):
+                 known_redshift=True, training_set_parameters=None, calculate_t0=None, other_meta_data={}):
         """
-
+	#What changes to make this?
         Parameters
         ----------
         mjd : array
@@ -45,6 +47,10 @@ class InputLightCurve(object):
         calculate_t0 : bool or None
             Optional parameter. If this is False, t0 will not be computed
             even if the training_set_parameters argument is set.
+        other_meta_data : dict
+            Optional parameter. Any other meta data that might be used for contextual information in classficiation.
+            E.g. other_meta_data={'hosttype': 3, 'dist_from_center': 400}. These keys are the keys that
+            should be entered into the 'contextual_info' tuple in the create_custom_classifier function if desired.
         """
 
         self.mjd = np.array(mjd)
@@ -60,6 +66,7 @@ class InputLightCurve(object):
         self.known_redshift = known_redshift
         self.training_set_parameters = training_set_parameters
         self.calculate_t0 = calculate_t0
+        self.other_meta_data = other_meta_data
         if training_set_parameters is not None:
             self.class_number = training_set_parameters['class_number']
             self.peakmjd = training_set_parameters['peakmjd']
@@ -134,6 +141,8 @@ class InputLightCurve(object):
 
         outlc = laobject.get_lc_as_table()
         outlc.meta = {'redshift': self.redshift, 'b': self.b, 'mwebv': self.mwebv, 'trigger_mjd': self.trigger_mjd}
+        if self.other_meta_data:
+            outlc.meta.update(self.other_meta_data)
 
         if self.training_set_parameters is not None:
             if self.calculate_t0 is not False:
@@ -145,19 +154,31 @@ class InputLightCurve(object):
         return outlc
 
 
-def read_multiple_light_curves(light_curve_list, known_redshift=True, training_set_parameters=None):
+def read_multiple_light_curves(light_curve_list, known_redshift=True,
+                               training_set_parameters=None, other_meta_data=None,
+                               nprocesses=2, calculate_t0=False):
     """
     light_curve_list is a list of tuples with each tuple having entries:
     mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv
 
+    other_meta_data is a list of dictionaries
+
     Returns the processed light curves
     """
 
-    processed_light_curves = {}
-    for light_curve in light_curve_list:
-        mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv = light_curve
-        inputlightcurve = InputLightCurve(*light_curve, known_redshift=known_redshift,
-                                          training_set_parameters=training_set_parameters)
-        processed_light_curves[objid] = inputlightcurve.preprocess_light_curve()
+    if other_meta_data is None:
+        other_meta_data = [None]*len(light_curve_list)
 
-    return processed_light_curves
+    r = list()
+    with Pool(processes=nprocesses) as pool:
+        for i, light_curve in enumerate(light_curve_list):
+            mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv = light_curve
+            inputlightcurve = InputLightCurve(*light_curve, known_redshift=known_redshift,
+                                              training_set_parameters=training_set_parameters[i] if training_set_parameters else None,
+                                              other_meta_data=other_meta_data[i],
+                                              calculate_t0=calculate_t0)
+            r.append((
+                objid, pool.apply_async(
+                inputlightcurve.preprocess_light_curve, ())
+            ))
+        return {objid: _.get() for objid, _ in r}

@@ -29,13 +29,13 @@ COLORS = ['grey', 'tab:green', 'tab:orange', 'tab:blue', 'tab:red', 'tab:purple'
 COLCLASS = {'Pre-explosion': 'grey', 'SNIa-norm': 'tab:green', 'SNIbc': 'tab:orange', 'SNII': 'tab:blue',
             'SNIa-91bg': 'tab:red', 'SNIa-x': 'tab:purple', 'point-Ia': 'tab:brown', 'Kilonova': '#aaffc3',
             'SLSN-I': 'tab:olive', 'PISN': 'tab:cyan', 'ILOT': '#FF1493', 'CART': 'navy', 'TDE': 'tab:pink',
-            'AGN': 'bisque'}
+            'AGN': 'bisque'} #change here
 COLPB = {'u': 'tab:blue', 'g': 'tab:blue', 'r': 'tab:orange', 'i': 'm', 'z': 'k', 'Y': 'y'}
 MARKPB = {'g': 'o', 'r': 's', 'i': 'x'}
 ALPHAPB = {'g': 0.3, 'r': 1., 'i': 0.7}
 WLOGLOSS_WEIGHTS = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
-MINTIME = -70
-MAXTIME = 80
+MINTIME = 0
+MAXTIME = 12
 
 def plot_metrics(class_names, model, X_test, y_test, fig_dir, timesX_test=None, orig_lc_test=None, objids_test=None,
                  passbands=('g', 'r'), num_ex_vs_time=100, init_day_since_trigger=-25):
@@ -52,8 +52,8 @@ def plot_metrics(class_names, model, X_test, y_test, fig_dir, timesX_test=None, 
     print("Accuracy is: {}/{} = {}".format(accuracy, len(y_test_indexes.flatten()),
                                            accuracy / len(y_test_indexes.flatten())))
 
-    if "Pre-explosion" not in class_names:
-        class_names = ["Pre-explosion"] + class_names
+    # if "Post-explosion" not in class_names:
+    #    class_names = ["Post-explosion"] + class_names
 
     # Set trailing zeros to -200
     for i in range(timesX_test.shape[0]):
@@ -319,7 +319,7 @@ def plot_metrics(class_names, model, X_test, y_test, fig_dir, timesX_test=None, 
     images_cf, images_roc, images_pr = [], [], []
     roc_auc, pr_auc = {}, {}
     wlogloss = {}
-    for i, days_since_trigger in enumerate(list(np.arange(init_day_since_trigger, 25)) + list(np.arange(25, 70, step=5))):  # [('early2days', 2), ('late40days', 40)]: # [-25, -20, -15, -10, -5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]:
+    for i, days_since_trigger in enumerate(list(np.arange(init_day_since_trigger, 16))):  # [('early2days', 2), ('late40days', 40)]: # [-25, -20, -15, -10, -5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]:
         print("Plotting CF matrix", i, days_since_trigger, "days")
         index = np.where(time_bins == days_since_trigger)[0][0]
         y_test_on_day_i = y_test_indexes_days_past_trigger[:, index]

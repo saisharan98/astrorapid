@@ -28,40 +28,58 @@ except ImportError:
 CLASS_COLOR = {'Pre-explosion': 'grey', 'SNIa-norm': 'tab:green', 'SNIbc': 'tab:orange', 'SNII': 'tab:blue',
                'SNIa-91bg': 'tab:red', 'SNIa-x': 'tab:purple', 'point-Ia': 'tab:brown', 'Kilonova': '#aaffc3',
                'SLSN-I': 'tab:olive', 'PISN': 'tab:cyan', 'ILOT': '#FF1493', 'CART': 'navy', 'TDE': 'tab:pink',
-               'AGN': 'bisque'}
-PB_COLOR = {'u': 'tab:blue', 'g': 'tab:blue', 'r': 'tab:orange', 'i': 'm', 'z': 'k', 'Y': 'y'}
-PB_MARKER = {'g': 'o', 'r': 's'}
-PB_ALPHA = {'g': 0.3, 'r': 1.}
+               'AGN': 'bisque', 'Ia': 'tab:green', 'SLSN': 'tab:olive', 'II': 'tab:blue', 'IIn': 'tab:brown',
+               'Ibc': 'tab:orange', 'CC': 'blue'} 
+#Change CLASS_COLOR to binary
+#CLASS_COLOR = {'MPA1':'r','APR4':'k'}
+PB_COLOR = {'u': 'tab:blue', 'g': 'tab:blue', 'r': 'tab:orange', 'i': 'm', 'z': 'k', 'Y': 'y'} #two colors
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class Classify(object):
-    def __init__(self, known_redshift=True, model_filepath='', passbands=('g', 'r'),
+    def __init__(self, model_name='ZTF_known_redshift', model_filepath='', known_redshift=True, passbands=('g', 'r'),
                  class_names=('Pre-explosion', 'SNIa-norm', 'SNIbc', 'SNII', 'SNIa-91bg', 'SNIa-x', 'Kilonova', 'SLSN-I', 'TDE'),
-                 nobs=50, mintime=-70, maxtime=80, timestep=3.0, bcut=False, zcut=None, graph=None, model=None):
-        """ Takes a list of photometric information and classifies light curves as a function of time
+                 nobs=50, mintime=-70, maxtime=80, timestep=3.0, bcut=False, zcut=None, graph=None, model=None,
+                 no_context=False):
+    """
+    def __init__(self, model_name='BULLA-exact-name', model_filepath='', contextual_info=True, passbands=('g', 'r'),
+                 class_names=('APR4','MPA1'),
+                 nobs=50, mintime=-70, maxtime=80, timestep=3.0, bcut=False, zcut=None, graph=None, model=None,
+                 no_context=False): #nobs, mintime...?
 
+    """
+        """ Takes a list of photometric information and classifies light curves as a function of time
+	#model_name will be a small subset of logprob, areafifty,areaninety; class_names: MPA1 or APR4 
         Parameters
         ----------
-        known_redshift : bool
-            Different model to be used if redshift is not known.
+        model_name : str
+            The name of the pretrained model to use.
+            Choose one of: 'PS1_known_redshift_Ia_CC_SLSN', 'PS1_known_redshift_Ia_II_IIn_Ibc_SLSN', 'ZTF_known_redshift', 'ZTF_unknown_redshift'.
         model_filepath : str
-            Optional argument. The model is taken from the pre-trained model ZTF model if not specified.
+            Optional argument. If not specified, the pre-trained model specified in the model_name argument is used.
+        known_redshift : bool
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
         passbands : tuple
-            Optional argument. A tuple listing each passband. E.g. ('g', 'r').
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
+            A tuple listing each passband. E.g. ('g', 'r').
         class_names : tuple
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
             List of class names that the model has been trained on. Note that this must be in the same order
             as used in training for the model specified in the argument model_filepath.
             If you are using the default model, leave this argument out.
         nobs : int
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
             Number of points to use in interpolation of light curve between mintime and maxtime.
             Do not change this argument unless you are using your own model_filepath
             and have changed this during training.
         mintime : int
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
             Days from trigger (minimum) to extract from light curve.
         maxtime : int
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
             Days from trigger (maximum) to extract from light curve.
         timestep : float
+            Optional argument. Only needed if you are not using a default model and have specified model_filepath.
             Time-step between interpolated points in light curve.
             Do not change this argument unless you are using your own model_filepath
             and have changed this during training.
@@ -81,31 +99,92 @@ class Classify(object):
             This would have been created with keras' load_model function e.g. model = load_model('keras_model.hdf5')
 
         """
-        self.known_redshift = known_redshift
-        self.passbands = passbands
+
         self.bcut = bcut
         self.zcut = zcut
-        self.class_names = class_names
-        self.nobs = nobs
-        self.mintime = mintime
-        self.maxtime = maxtime
-        self.timestep = timestep
 
-        if self.known_redshift:
-            self.contextual_info = ('redshift',)
-            filename = 'keras_model_with_redshift.hdf5'
-        else:
-            self.contextual_info = ()
-            filename = 'keras_model_no_redshift.hdf5'
+	#which model?
+	#change contextual info, known_redshift, class_names
 
         if model_filepath != '' and os.path.exists(model_filepath):
             self.model_filepath = model_filepath
+            self.contextual_info = [] if no_context else ['offset', 'logprob', 'area_ninety']
+            self.known_redshift = known_redshift
+            self.passbands = passbands
+            self.class_names = class_names
+            self.nobs = nobs
+            self.mintime = mintime
+            self.maxtime = maxtime
+            self.timestep = timestep
         else:
-            if not (model_filepath == '' and os.path.exists(model_filepath)):
-                print("Invalid keras model. Using default model...")
-            self.model_filepath = os.path.join(SCRIPT_DIR, filename)
-            if not os.path.exists(self.model_filepath):
-                self.model_filepath = resource_filename(__name__, 'keras_model_with_redshift.hdf5')
+            if model_name == 'ZTF_known_redshift':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'ZTF_known_redshift.hdf5')
+                self.contextual_info = ['redshift',]
+                self.known_redshift = True
+                self.passbands=('g', 'r')
+                self.class_names=('Pre-explosion', 'SNIa-norm', 'SNIbc', 'SNII', 'SNIa-91bg', 'SNIa-x', 'Kilonova', 'SLSN-I', 'TDE')
+                self.nobs = 50
+                self.mintime = -70
+                self.maxtime = 80
+                self.timestep = 3.0
+            elif model_name == 'ZTF_unknown_redshift':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'ZTF_unknown_redshift.hdf5')
+                self.contextual_info = []
+                self.known_redshift = False
+                self.passbands = ('g', 'r')
+                self.class_names = ('Pre-explosion', 'SNIa-norm', 'SNIbc', 'SNII', 'SNIa-91bg', 'SNIa-x', 'Kilonova', 'SLSN-I', 'TDE')
+                self.nobs = 50
+                self.mintime = -70
+                self.maxtime = 80
+                self.timestep = 3.0
+            elif model_name == 'PS1_known_redshift_Ia_CC_SLSN':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'PS1_known_redshift_Ia_CC_SLSN.hdf5')
+                self.contextual_info = ['redshift',]
+                self.known_redshift = True
+                self.passbands = ('g', 'r', 'i', 'z')
+                self.class_names = ('Pre-explosion', 'SLSN', 'CC', 'Ia')
+                self.nobs = 50
+                self.mintime = -70
+                self.maxtime = 80
+                self.timestep = 3.0
+            elif model_name == 'PS1_known_redshift_Ia_II_IIn_Ibc_SLSN':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'PS1_known_redshift_Ia_II_IIn_Ibc_SLSN.hdf5')
+                self.contextual_info = ['redshift',]
+                self.known_redshift = True
+                self.passbands = ('g', 'r', 'i', 'z')
+                self.class_names = ('Pre-explosion', 'SLSN', 'II', 'IIn', 'Ia', 'Ibc')
+                self.nobs = 50
+                self.mintime = -70
+                self.maxtime = 80
+                self.timestep = 3.0
+            elif model_name == 'PS1_unknown_redshift_Ia_CC_SLSN':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'PS1_unknown_redshift_Ia_CC_SLSN.hdf5')
+                self.contextual_info = []
+                self.known_redshift = False
+                self.passbands = ('g', 'r', 'i', 'z')
+                self.class_names = ('Pre-explosion', 'SLSN', 'II', 'IIn', 'Ia', 'Ibc')
+                self.nobs = 50
+                self.mintime = -70
+                self.maxtime = 80
+                self.timestep = 3.0
+            """
+            elif model_name = 'BULLA-exact-name':
+                self.model_filepath = os.path.join(SCRIPT_DIR, 'BULLA-exact-name.pkl.gz')
+                self.contextual_info = ['logprob','areaninety','areafifty']
+                self.contextual_info = False
+                self.passbands = ('g', 'r')
+                self.class_names = ('APR4','MPA1')
+                self.nobs = ?
+                self.mintime = ?
+                self.maxtime = ?
+                self.timestep = ?
+
+            """
+            else:
+                raise Exception("Invalid model_name. Select a valid model_name from the following "
+                                "('PS1_known_redshift', 'PS1_unknown_redshift', "
+                                "'ZTF_known_redshift', 'ZTF_unknown_redshift'), "
+                                "or set model_filepath to a valid path to your own trained model.")
 
         print(self.model_filepath)
         self.graph = graph
@@ -114,9 +193,27 @@ class Classify(object):
         else:
             self.model = load_model(self.model_filepath, custom_objects={'TCN': TCN})
 
-    def process_light_curves(self, light_curves):
+    def process_light_curves(self, light_curves, other_meta_data=None):
+        """
+	#change this function to remove known_redshift -> (logprob, area50, area90), objid -> snid?
+        Parameters
+        ----------
+        light_curves: list of tuples
+            Each tuple in the list is of the form: (mjd, flux, fluxerr, passband, photflag, ra, dec, objid, redshift, mwebv)
+            for each transient.
+        other_meta_data: list of dictionaries or None
+            Each dictionary in the list contains any additional meta data to be used as contextual_info
+            when classifying (if the classifier being used was trained on the specified contextual_info).
+            E.g. other_meta_data = [{'hosttype': 3, 'host_dist': 200}, {'hosttype': 2, 'host_dist': 150},]
+
+
+        Returns
+        -------
+
+        """
         processed_lightcurves = read_multiple_light_curves(light_curves, known_redshift=self.known_redshift,
-                                                           training_set_parameters=None)
+                                                           training_set_parameters=None,
+                                                           other_meta_data=other_meta_data)
         prepareinputarrays = PrepareInputArrays(self.passbands, self.contextual_info, self.bcut, self.zcut,
                                                 self.nobs, self.mintime, self.maxtime, self.timestep)
         X, orig_lc, timesX, objids_list, trigger_mjds = prepareinputarrays.prepare_input_arrays(processed_lightcurves)
@@ -129,6 +226,7 @@ class Classify(object):
         return X, orig_lc, timesX, objids_list, trigger_mjds
 
     def _do_error_checks(self, light_curves):
+	#might have to chang assertions
         assert isinstance(light_curves, (list, np.ndarray))
         for light_curve in light_curves:
             assert len(light_curve) == 10
@@ -153,7 +251,7 @@ class Classify(object):
                 assert isinstance(redshift, numbers.Number)
                 assert np.isfinite(redshift)
 
-    def get_predictions(self, light_curves, return_predictions_at_obstime=False, return_objids=False):
+    def get_predictions(self, light_curves, other_meta_data=None, return_predictions_at_obstime=False, return_objids=False):
         """ Return the classification accuracies as a function of time for each class
 
         Parameters
@@ -184,6 +282,11 @@ class Classify(object):
 
                 mwebv: Milky way extinction.
 
+        other_meta_data: list of dictionaries or None
+            Each dictionary in the list contains any additional meta data to be used as contextual_info
+            when classifying (if the classifier being used was trained on the specified contextual_info).
+            E.g. other_meta_data = [{'hosttype': 3, 'host_dist': 200}, {'hosttype': 2, 'host_dist': 150},]
+
         return_predictions_at_obstime: bool
             Return the predictions at the observation times instead of at the 50 interpolated timesteps.
         return_objids : bool, optional
@@ -205,7 +308,8 @@ class Classify(object):
 
         self._do_error_checks(light_curves)
 
-        self.X, self.orig_lc, self.timesX, self.objids, self.trigger_mjds = self.process_light_curves(light_curves)
+        self.X, self.orig_lc, self.timesX, self.objids, self.trigger_mjds = self.process_light_curves(light_curves,
+                                                                                                      other_meta_data=other_meta_data)
         nobjects = len(self.objids)
 
         if nobjects == 0:
@@ -233,9 +337,8 @@ class Classify(object):
                 used_passbands = [pb for pb in self.passbands if pb in lc_data['passband']]
                 for pb in used_passbands:
                     pbmask = lc_data['passband'] == pb
-                    if pb in self.orig_lc[idx]:
-                        obs_time.append(lc_data[pbmask]['time'].data)
-                obs_time = np.array(obs_time)
+                    obs_time.append(lc_data[pbmask]['time'].data)
+                obs_time = np.hstack(obs_time)
                 obs_time = np.sort(obs_time[~np.isnan(obs_time)])
                 y_predict_at_obstime = []
                 for classnum, classname in enumerate(self.class_names):
@@ -308,7 +411,7 @@ class Classify(object):
             for pbidx, pb in enumerate(used_passbands):
                 pbmask = lc_data['passband'] == pb
                 ax1.errorbar(lc_data[pbmask]['time'], lc_data[pbmask]['flux'],
-                             yerr=lc_data[pbmask]['fluxErr'], fmt=PB_MARKER[pb], label=pb,
+                             yerr=lc_data[pbmask]['fluxErr'], fmt='o', label=pb,
                              c=PB_COLOR[pb], lw=3, markersize=10, alpha=alpha_observations)
                 if plot_matrix_input:
                     ax1.plot(self.timesX[idx][:argmax], self.X[idx][:, pbidx][:argmax], c=PB_COLOR[pb], lw=3)
@@ -515,7 +618,7 @@ class Classify(object):
                     dea = [lc_data[pbmask]['time'] < new_t[int(i+1)]]
 
                     ax1.errorbar(np.array(lc_data[pbmask]['time'])[dea], np.array(lc_data[pbmask]['flux'])[dea],
-                                 yerr=np.array(lc_data[pbmask]['fluxErr'])[dea], fmt=PB_MARKER[pb], label=pb,
+                                 yerr=np.array(lc_data[pbmask]['fluxErr'])[dea], fmt='o', label=pb,
                                  c=PB_COLOR[pb], lw=3, markersize=10)
 
                 for classnum, classname in enumerate(self.class_names):

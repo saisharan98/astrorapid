@@ -8,7 +8,7 @@ from astrorapid.process_light_curves import InputLightCurve
 
 
 def get_data(get_data_func, class_num, data_dir, save_dir, passbands, known_redshift=True, nprocesses=1, redo=False,
-             calculate_t0=True):
+             calculate_t0=True): #known_redshift -> contextual_info?
     """
     Get data using some function.
 
@@ -19,7 +19,7 @@ def get_data(get_data_func, class_num, data_dir, save_dir, passbands, known_reds
         E.g. get_data_func = get_data_custom(class_num, data_dir, save_dir, passbands, known_redshift)
     class_num : int
         Class number. E.g. SNIa is 1. See helpers.py for lookup table.
-        E.g. class_num = 1
+        E.g. class_num = 1 ###CHANGED helper.py
     data_dir : str
         Directory where data is stored
         E.g. data_dir='data/ZTF_20190512/'
@@ -70,7 +70,7 @@ def get_data(get_data_func, class_num, data_dir, save_dir, passbands, known_reds
 
     return get_data_func(class_num, data_dir, save_dir, passbands, known_redshift, nprocesses, redo, calculate_t0)
 
-
+#Does this need to be modified?
 def get_data_from_snana_fits(class_num, data_dir='data/ZTF_20190512/', save_dir='data/saved_light_curves/',
                              passbands=('g', 'r'), known_redshift=True, nprocesses=1, redo=False, calculate_t0=True):
     """
@@ -104,7 +104,7 @@ def get_data_from_snana_fits(class_num, data_dir='data/ZTF_20190512/', save_dir=
 
     return light_curves
 
-
+#Does the below need to be modified?
 def get_real_ztf_training_data(class_name, data_dir='data/real_ZTF_data_from_osc',
                                save_dir='data/saved_light_curves/', pbs=('g', 'r'),
                                known_redshift=True, nprocesses=1, redo=False, calculate_t0=True):

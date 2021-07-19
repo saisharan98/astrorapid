@@ -8,6 +8,8 @@ from astrorapid.process_light_curves import InputLightCurve
 
 
 def get_custom_data(class_num, data_dir, save_dir, passbands, known_redshift, nprocesses, redo):
+#def get_custom_data(class_num, data_dir, save_dir, passbands, contextual_info (bool), nprocesses, redo):
+
     """
     Get data from custom data files.
     You will need to write this function with this following skeleton function.
@@ -32,7 +34,7 @@ def get_custom_data(class_num, data_dir, save_dir, passbands, known_redshift, np
         Number of processes to use
     redo : bool
         Whether to redo reading the data and saving the processed data.
-
+	####Would objid change? It's constant
 
     Returns
     -------
@@ -68,7 +70,7 @@ def get_custom_data(class_num, data_dir, save_dir, passbands, known_redshift, np
     save_lc_filepath = os.path.join(save_dir, f"lc_classnum_{class_num}.pickle")
     if os.path.exists(save_lc_filepath) and not redo:
         with open(save_lc_filepath, "rb") as fp:  # Unpickling
-            light_curves = pickle.load(fp)
+            light_curves = pickle.load(fp) #need to extract the lightcurves only 9 columns?
     else:
         light_curves = {}
         # Read in data from data_dir and get the mjd, flux, fluxerr, passband, photflag as 1D numpy arrays for
